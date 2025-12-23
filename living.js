@@ -338,16 +338,18 @@ function setupLivingAutocomplete(inputId, listId) {
    COMPARE LOGIC
 ================================ */
 
-let visibleFieldCount = 8;
+let cachedRows = [];
+let visibleCount = 6;
 const LOAD_STEP = 6;
-let currentKeys = [];
-let currentCityA = null;
-let currentCityB = null;
+
 
 function compareLivingCost() {
-  const cityAId = document.getElementById("cityA").dataset.cityId;
-  const cityBId = document.getElementById("cityB").dataset.cityId;
+  const cityAInput = document.getElementById("cityA");
+  const cityBInput = document.getElementById("cityB");
   const results = document.getElementById("livingResults");
+
+  const cityAId = cityAInput.dataset.cityId;
+  const cityBId = cityBInput.dataset.cityId;
 
   if (!cityAId || !cityBId || cityAId === cityBId) {
     results.innerHTML = `<div class="message error">
@@ -356,44 +358,97 @@ function compareLivingCost() {
     return;
   }
 
-  currentCityA = livingCostData[cityAId];
-  currentCityB = livingCostData[cityBId];
-  currentKeys = Object.keys(livingFields);
-  visibleFieldCount = 8;
+  const cityA = livingCostData[cityAId];
+  const cityB = livingCostData[cityBId];
 
-  renderLivingRows();
-}
-
-function renderLivingRows() {
-  const results = document.getElementById("livingResults");
+  // reset state
+  cachedRows = [];
+  visibleCount = 6;
   results.innerHTML = "";
 
-  const slice = currentKeys.slice(0, visibleFieldCount);
+  let scoreA = 0;
+  let scoreB = 0;
+  let totalParams = 0;
 
-  slice.forEach(key => {
-    if (!(key in currentCityA) || !(key in currentCityB)) return;
+  Object.keys(livingFields).forEach(key => {
+    if (!(key in cityA) || !(key in cityB)) return;
 
     const field = livingFields[key];
+    const valA = cityA[key];
+    const valB = cityB[key];
+
+    const normA = normalizeScore(valA, field.better);
+    const normB = normalizeScore(valB, field.better);
+
+    scoreA += normA;
+    scoreB += normB;
+    totalParams++;
+
+    const winner =
+      normA > normB ? "A" :
+      normB > normA ? "B" : "equal";
+
+    const variance = varianceLabel(valA, valB);
+
     const row = document.createElement("div");
     row.className = "living-row";
-
     row.innerHTML = `
-      <div>${field.label}</div>
-      <div>${field.unit}${currentCityA[key]}</div>
-      <div>${field.unit}${currentCityB[key]}</div>
+      <div>
+        ${field.label}
+        <div class="variance">${variance}</div>
+      </div>
+      <div class="${winner === "A" ? "winner" : ""}">
+        ${field.unit}${valA}
+      </div>
+      <div class="${winner === "B" ? "winner" : ""}">
+        ${field.unit}${valB}
+      </div>
     `;
 
+    cachedRows.push(row);
+  });
+
+  // summary
+  const clarityA = Math.round((scoreA / totalParams) * 10);
+  const clarityB = Math.round((scoreB / totalParams) * 10);
+
+  const overallWinner =
+    clarityA > clarityB ? cityAInput.value :
+    clarityB > clarityA ? cityBInput.value :
+    "Both cities are comparable";
+
+  const summary = document.createElement("div");
+  summary.className = "living-summary";
+  summary.innerHTML = `
+    <h4>🏆 Winner: ${overallWinner}</h4>
+    <p>
+      <strong>${cityAInput.value}</strong>: ${clarityA}/10 &nbsp; | &nbsp;
+      <strong>${cityBInput.value}</strong>: ${clarityB}/10
+    </p>
+    <p class="legal">
+      Data shown is indicative and may vary by lifestyle and location.
+    </p>
+  `;
+
+  results.appendChild(summary);
+
+  renderRows(results);
+}
+function renderRows(results) {
+  results.querySelectorAll(".living-row, .load-more-btn").forEach(el => el.remove());
+
+  cachedRows.slice(0, visibleCount).forEach(row => {
     results.appendChild(row);
   });
 
-  if (visibleFieldCount < currentKeys.length) {
+  if (visibleCount < cachedRows.length) {
     const btn = document.createElement("button");
     btn.className = "load-more-btn";
     btn.textContent = "Load more";
 
     btn.onclick = () => {
-      visibleFieldCount += LOAD_STEP;
-      renderLivingRows();
+      visibleCount += LOAD_STEP;
+      renderRows(results);
     };
 
     results.appendChild(btn);
