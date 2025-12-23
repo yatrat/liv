@@ -1,5 +1,3 @@
-
-
 const livingCities = [
   { id: "delhi", name: "Delhi" },
   { id: "mumbai", name: "Mumbai" },
