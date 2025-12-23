@@ -271,18 +271,31 @@ function compareLivingCost() {
   const cityAId = cityAInput.dataset.cityId;
   const cityBId = cityBInput.dataset.cityId;
 
-  // Validation
-  if (!cityAId || !cityBId || cityAId === cityBId) {
-    results.innerHTML = `
-      <div class="message error">
-        Please select two different cities from suggestions.
-      </div>`;
-    return;
-  }
+    const header = document.getElementById("livingHeader");
 
-  // Update sticky header
-  document.getElementById("cityAName").textContent = cityAInput.value;
-  document.getElementById("cityBName").textContent = cityBInput.value;
+if (!cityAId || !cityBId || cityAId === cityBId) {
+
+  header.style.display = "none";
+
+  results.innerHTML = `
+
+    <div class="message error">
+
+      Please select two different cities from suggestions.
+
+    </div>`;
+
+  return;
+
+}
+
+
+document.getElementById("cityAName").textContent = cityAInput.value;
+
+document.getElementById("cityBName").textContent = cityBInput.value;
+
+header.style.display = "grid";
+    
 
   const cityA = livingCostData[cityAId];
   const cityB = livingCostData[cityBId];
