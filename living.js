@@ -263,7 +263,6 @@ function setupLivingAutocomplete(inputId, listId) {
 let cachedRows = [];
 let visibleCount = 6;
 const LOAD_STEP = 6;
-
 function compareLivingCost() {
   const cityAInput = document.getElementById("cityA");
   const cityBInput = document.getElementById("cityB");
@@ -272,76 +271,104 @@ function compareLivingCost() {
   const cityAId = cityAInput.dataset.cityId;
   const cityBId = cityBInput.dataset.cityId;
 
+  // Validation
   if (!cityAId || !cityBId || cityAId === cityBId) {
-    results.innerHTML = `<div class="message error">
-      Please select two different cities from suggestions.
-    </div>`;
+    results.innerHTML = `
+      <div class="message error">
+        Please select two different cities from suggestions.
+      </div>`;
     return;
   }
 
-
+  // Update sticky header
   document.getElementById("cityAName").textContent = cityAInput.value;
   document.getElementById("cityBName").textContent = cityBInput.value;
 
   const cityA = livingCostData[cityAId];
   const cityB = livingCostData[cityBId];
 
+  // Reset state
   cachedRows = [];
   visibleCount = 6;
   results.innerHTML = "";
 
-  let scoreA = 0, scoreB = 0, total = 0;
+  let scoreA = 0;
+  let scoreB = 0;
+  let total = 0;
 
+  // Build rows
   Object.keys(livingFields).forEach(key => {
     if (!(key in cityA) || !(key in cityB)) return;
 
     const field = livingFields[key];
     const valA = cityA[key];
     const valB = cityB[key];
-const [normA, normB] = normalizeScore(valA, valB, field.better);
 
-scoreA += normA;
-scoreB += normB;
+    const [normA, normB] = normalizeScore(valA, valB, field.better);
 
+    scoreA += normA;
+    scoreB += normB;
     total++;
 
-    const winner = normA > normB ? "A" : normB > normA ? "B" : "";
+    const winner =
+      normA > normB ? "A" :
+      normB > normA ? "B" : "";
 
     const row = document.createElement("div");
     row.className = "living-row";
     row.innerHTML = `
-  <div>
-    ${field.label}
-    <div class="variance">${varianceLabel(valA, valB)}</div>
-  </div>
-  <div class="${winner === "A" ? "winner" : ""}">
-    ${formatRange(valA, field)}
-  </div>
-  <div class="${winner === "B" ? "winner" : ""}">
-    ${formatRange(valB, field)}
-  </div>
-`;
+      <div>
+        ${field.label}
+        <div class="variance">${varianceLabel(valA, valB)}</div>
+      </div>
+      <div class="${winner === "A" ? "winner" : ""}">
+        ${formatRange(valA, field)}
+      </div>
+      <div class="${winner === "B" ? "winner" : ""}">
+        ${formatRange(valB, field)}
+      </div>
+    `;
 
     cachedRows.push(row);
   });
 
+  // Safe score output
+  const scoreOutA = total ? Math.round((scoreA / total) * 10) : 0;
+  const scoreOutB = total ? Math.round((scoreB / total) * 10) : 0;
+
+  const winnerText =
+    scoreOutA > scoreOutB ? cityAInput.value :
+    scoreOutB > scoreOutA ? cityBInput.value :
+    "Both cities are comparable";
+
+  // Summary
   const summary = document.createElement("div");
   summary.className = "living-summary";
   summary.innerHTML = `
-    <h4>🏆 Winner: ${scoreA > scoreB ? cityAInput.value : cityBInput.value}</h4>
-    <p><strong>${cityAInput.value}</strong>: ${Math.round(scoreA / total * 10)}/10 |
-       <strong>${cityBInput.value}</strong>: ${Math.round(scoreB / total * 10)}/10</p>
-    <p class="legal">Data is indicative and may vary.</p>
+    <h4>🏆 Winner: ${winnerText}</h4>
+    <p>
+      <strong>${cityAInput.value}</strong>: ${scoreOutA}/10 &nbsp; | &nbsp;
+      <strong>${cityBInput.value}</strong>: ${scoreOutB}/10
+    </p>
+    <p class="legal">
+      Data is indicative and may vary by lifestyle, location, and time.
+    </p>
   `;
 
   results.appendChild(summary);
   renderRows(results);
 }
 
-function renderRows(results) {
-  results.querySelectorAll(".living-row, .load-more-btn").forEach(e => e.remove());
+/* ===============================
+   RENDER (LOAD MORE)
+================================ */
 
-  cachedRows.slice(0, visibleCount).forEach(row => results.appendChild(row));
+function renderRows(results) {
+  results.querySelectorAll(".living-row, .load-more-btn").forEach(el => el.remove());
+
+  cachedRows.slice(0, visibleCount).forEach(row => {
+    results.appendChild(row);
+  });
 
   if (visibleCount < cachedRows.length) {
     const btn = document.createElement("button");
@@ -359,6 +386,7 @@ function renderRows(results) {
    HELPERS
 ================================ */
 
+// Score normalization (safe)
 function normalizeScore(valA, valB, better) {
   if (valA == null || valB == null) return [0, 0];
   if (valA === valB) return [1, 1];
@@ -372,20 +400,22 @@ function normalizeScore(valA, valB, better) {
   return [min / valA, min / valB];
 }
 
-
-
+// Difference label
 function varianceLabel(a, b) {
   const diff = Math.abs(a - b);
   const avg = (a + b) / 2;
   const pct = (diff / avg) * 100;
+
   if (pct < 10) return "Minor difference";
   if (pct < 25) return "Moderate difference";
   return "Major difference";
 }
+
+// Range formatter (UX-friendly)
 function formatRange(value, field) {
   if (value == null) return "—";
 
-  // Scores (0–10 scale)
+  // Scores
   if (field.scale === "/10") {
     const min = Math.max(0, Math.floor(value - 0.5));
     const max = Math.min(10, Math.ceil(value + 0.5));
