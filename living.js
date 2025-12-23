@@ -10,8 +10,6 @@ const livingCities = [
   { id: "kolkata", name: "Kolkata" },
   { id: "kochi", name: "Kochi" }
 ];
-
-
 const livingCostData = {
   
     "delhi": {
@@ -314,17 +312,17 @@ scoreB += normB;
     const row = document.createElement("div");
     row.className = "living-row";
     row.innerHTML = `
-      <div>
-        ${field.label}
-        <div class="variance">${varianceLabel(valA, valB)}</div>
-      </div>
-      <div class="${winner === "A" ? "winner" : ""}">
-        ${field.unit}${valA}${field.scale || ""}
-      </div>
-      <div class="${winner === "B" ? "winner" : ""}">
-        ${field.unit}${valB}${field.scale || ""}
-      </div>
-    `;
+  <div>
+    ${field.label}
+    <div class="variance">${varianceLabel(valA, valB)}</div>
+  </div>
+  <div class="${winner === "A" ? "winner" : ""}">
+    ${formatRange(valA, field)}
+  </div>
+  <div class="${winner === "B" ? "winner" : ""}">
+    ${formatRange(valB, field)}
+  </div>
+`;
 
     cachedRows.push(row);
   });
@@ -365,17 +363,17 @@ function renderRows(results) {
 
 function normalizeScore(valA, valB, better) {
   if (valA == null || valB == null) return [0, 0];
+  if (valA === valB) return [1, 1];
 
-  // If higher is better
   if (better === "higher") {
     const max = Math.max(valA, valB);
     return [valA / max, valB / max];
   }
 
-  // If lower is better
   const min = Math.min(valA, valB);
   return [min / valA, min / valB];
 }
+
 
 
 function varianceLabel(a, b) {
@@ -385,6 +383,32 @@ function varianceLabel(a, b) {
   if (pct < 10) return "Minor difference";
   if (pct < 25) return "Moderate difference";
   return "Major difference";
+}
+function formatRange(value, field) {
+  if (value == null) return "—";
+
+  // Scores (0–10 scale)
+  if (field.scale === "/10") {
+    const min = Math.max(0, Math.floor(value - 0.5));
+    const max = Math.min(10, Math.ceil(value + 0.5));
+    return `${min}–${max}${field.scale}`;
+  }
+
+  // Index values
+  if (!field.unit && value < 10) {
+    const min = (value - 0.1).toFixed(1);
+    const max = (value + 0.1).toFixed(1);
+    return `${min}–${max}`;
+  }
+
+  // Money values
+  if (field.unit === "₹") {
+    const min = Math.round(value * 0.9);
+    const max = Math.round(value * 1.1);
+    return `₹${min}–${max}`;
+  }
+
+  return value;
 }
 
 /* ===============================
