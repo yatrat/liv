@@ -303,12 +303,11 @@ function compareLivingCost() {
     const field = livingFields[key];
     const valA = cityA[key];
     const valB = cityB[key];
+const [normA, normB] = normalizeScore(valA, valB, field.better);
 
-    const normA = normalizeScore(valA, field.better);
-    const normB = normalizeScore(valB, field.better);
+scoreA += normA;
+scoreB += normB;
 
-    scoreA += normA;
-    scoreB += normB;
     total++;
 
     const winner = normA > normB ? "A" : normB > normA ? "B" : "";
@@ -365,9 +364,20 @@ function renderRows(results) {
    HELPERS
 ================================ */
 
-function normalizeScore(value, better, max = 10) {
-  return better === "higher" ? value / max : 1 - (value / max);
+function normalizeScore(valA, valB, better) {
+  if (valA == null || valB == null) return [0, 0];
+
+  // If higher is better
+  if (better === "higher") {
+    const max = Math.max(valA, valB);
+    return [valA / max, valB / max];
+  }
+
+  // If lower is better
+  const min = Math.min(valA, valB);
+  return [min / valA, min / valB];
 }
+
 
 function varianceLabel(a, b) {
   const diff = Math.abs(a - b);
