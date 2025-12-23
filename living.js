@@ -308,7 +308,7 @@ const [normA, normB] = normalizeScore(valA, valB, field.better);
 scoreA += normA;
 scoreB += normB;
 
-    total++;
+    
 
     const winner = normA > normB ? "A" : normB > normA ? "B" : "";
 
