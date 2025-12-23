@@ -190,99 +190,25 @@ const livingCostData = {
 ================================ */
 
 const livingFields = {
-  avg_room_rent: {
-    label: "Average Room Rent",
-    unit: "₹",
-    better: "lower"
-  },
-  food_cost: {
-    label: "Food Cost",
-    unit: "₹",
-    better: "lower"
-  },
-  transport_cost: {
-    label: "Transport Cost",
-    unit: "₹",
-    better: "lower"
-  },
-  rent_index: {
-    label: "Rent Index",
-    unit: "",
-    better: "lower"
-  },
-  avg_salary_index: {
-    label: "Salary Index",
-    unit: "",
-    better: "higher"
-  },
-  public_transport_score: {
-    label: "Public Transport",
-    unit: "",
-    better: "higher"
-  },
-  safety_score: {
-    label: "Safety Score",
-    unit: "",
-    better: "higher"
-  },
-  women_safety_score: {
-    label: "Women Safety",
-    unit: "",
-    better: "higher"
-  },
-  air_quality: {
-    label: "Air Quality",
-    unit: "",
-    better: "higher"
-  },
-  climate_comfort: {
-    label: "Climate Comfort",
-    unit: "",
-    better: "higher"
-  },
-  healthcare_score: {
-    label: "Healthcare",
-    unit: "",
-    better: "higher"
-  },
-  education_score: {
-    label: "Education",
-    unit: "",
-    better: "higher"
-  },
-  internet_quality: {
-    label: "Internet Quality",
-    unit: "",
-    better: "higher"
-  },
-  power_reliability: {
-    label: "Power Reliability",
-    unit: "",
-    better: "higher"
-  },
-  water_availability: {
-    label: "Water Availability",
-    unit: "",
-    better: "higher"
-  },
-  traffic_congestion: {
-    label: "Traffic Congestion",
-    unit: "",
-    better: "lower"
-  },
-  nightlife_score: {
-    label: "Nightlife",
-    unit: "",
-    better: "higher"
-  },
-  job_opportunities: {
-  label: "Job Opportunities",
-  unit: "",
-  better: "higher"
-  }
-
+  avg_room_rent: { label: "Average Room Rent", unit: "₹", better: "lower" },
+  food_cost: { label: "Food Cost", unit: "₹", better: "lower" },
+  transport_cost: { label: "Transport Cost", unit: "₹", better: "lower" },
+  rent_index: { label: "Rent Index", unit: "", better: "lower" },
+  avg_salary_index: { label: "Salary Index", unit: "", better: "higher" },
+  public_transport_score: { label: "Public Transport", unit: "", scale: "/10", better: "higher" },
+  safety_score: { label: "Safety Score", unit: "", scale: "/10", better: "higher" },
+  women_safety_score: { label: "Women Safety", unit: "", scale: "/10", better: "higher" },
+  air_quality: { label: "Air Quality", unit: "", scale: "/10", better: "higher" },
+  climate_comfort: { label: "Climate Comfort", unit: "", scale: "/10", better: "higher" },
+  healthcare_score: { label: "Healthcare", unit: "", scale: "/10", better: "higher" },
+  education_score: { label: "Education", unit: "", scale: "/10", better: "higher" },
+  internet_quality: { label: "Internet Quality", unit: "", scale: "/10", better: "higher" },
+  power_reliability: { label: "Power Reliability", unit: "", scale: "/10", better: "higher" },
+  water_availability: { label: "Water Availability", unit: "", scale: "/10", better: "higher" },
+  traffic_congestion: { label: "Traffic Congestion", unit: "", scale: "/10", better: "lower" },
+  nightlife_score: { label: "Nightlife", unit: "", scale: "/10", better: "higher" },
+  job_opportunities: { label: "Job Opportunities", unit: "", scale: "/10", better: "higher" }
 };
-
 
 /* ===============================
    INLINE AUTOCOMPLETE
@@ -342,7 +268,6 @@ let cachedRows = [];
 let visibleCount = 6;
 const LOAD_STEP = 6;
 
-
 function compareLivingCost() {
   const cityAInput = document.getElementById("cityA");
   const cityBInput = document.getElementById("cityB");
@@ -358,17 +283,19 @@ function compareLivingCost() {
     return;
   }
 
+
+  document.getElementById("cityAName").textContent = cityAInput.value;
+  document.getElementById("cityBName").textContent = cityBInput.value;
+  document.getElementById("livingHeader").style.display = "grid";
+
   const cityA = livingCostData[cityAId];
   const cityB = livingCostData[cityBId];
 
-  // reset state
   cachedRows = [];
   visibleCount = 6;
   results.innerHTML = "";
 
-  let scoreA = 0;
-  let scoreB = 0;
-  let totalParams = 0;
+  let scoreA = 0, scoreB = 0, total = 0;
 
   Object.keys(livingFields).forEach(key => {
     if (!(key in cityA) || !(key in cityB)) return;
@@ -382,77 +309,73 @@ function compareLivingCost() {
 
     scoreA += normA;
     scoreB += normB;
-    totalParams++;
+    total++;
 
-    const winner =
-      normA > normB ? "A" :
-      normB > normA ? "B" : "equal";
-
-    const variance = varianceLabel(valA, valB);
+    const winner = normA > normB ? "A" : normB > normA ? "B" : "";
 
     const row = document.createElement("div");
     row.className = "living-row";
     row.innerHTML = `
       <div>
         ${field.label}
-        <div class="variance">${variance}</div>
+        <div class="variance">${varianceLabel(valA, valB)}</div>
       </div>
       <div class="${winner === "A" ? "winner" : ""}">
-        ${field.unit}${valA}
+        ${field.unit}${valA}${field.scale || ""}
       </div>
       <div class="${winner === "B" ? "winner" : ""}">
-        ${field.unit}${valB}
+        ${field.unit}${valB}${field.scale || ""}
       </div>
     `;
 
     cachedRows.push(row);
   });
 
-  // summary
-  const clarityA = Math.round((scoreA / totalParams) * 10);
-  const clarityB = Math.round((scoreB / totalParams) * 10);
-
-  const overallWinner =
-    clarityA > clarityB ? cityAInput.value :
-    clarityB > clarityA ? cityBInput.value :
-    "Both cities are comparable";
-
   const summary = document.createElement("div");
   summary.className = "living-summary";
   summary.innerHTML = `
-    <h4>🏆 Winner: ${overallWinner}</h4>
-    <p>
-      <strong>${cityAInput.value}</strong>: ${clarityA}/10 &nbsp; | &nbsp;
-      <strong>${cityBInput.value}</strong>: ${clarityB}/10
-    </p>
-    <p class="legal">
-      Data shown is indicative and may vary by lifestyle and location.
-    </p>
+    <h4>🏆 Winner: ${scoreA > scoreB ? cityAInput.value : cityBInput.value}</h4>
+    <p><strong>${cityAInput.value}</strong>: ${Math.round(scoreA / total * 10)}/10 |
+       <strong>${cityBInput.value}</strong>: ${Math.round(scoreB / total * 10)}/10</p>
+    <p class="legal">Data is indicative and may vary.</p>
   `;
 
   results.appendChild(summary);
-
   renderRows(results);
 }
-function renderRows(results) {
-  results.querySelectorAll(".living-row, .load-more-btn").forEach(el => el.remove());
 
-  cachedRows.slice(0, visibleCount).forEach(row => {
-    results.appendChild(row);
-  });
+function renderRows(results) {
+  results.querySelectorAll(".living-row, .load-more-btn").forEach(e => e.remove());
+
+  cachedRows.slice(0, visibleCount).forEach(row => results.appendChild(row));
 
   if (visibleCount < cachedRows.length) {
     const btn = document.createElement("button");
     btn.className = "load-more-btn";
     btn.textContent = "Load more";
-
     btn.onclick = () => {
       visibleCount += LOAD_STEP;
       renderRows(results);
     };
-
     results.appendChild(btn);
   }
+}
+
+/* ===============================
+   HELPERS
+================================ */
+
+function normalizeScore(value, better, max = 10) {
+  return better === "higher" ? value / max : 1 - (value / max);
+}
+
+function varianceLabel(a, b) {
+  const diff = Math.abs(a - b);
+  const avg = (a + b) / 2;
+  const pct = (diff / avg) * 100;
+  if (pct < 10) return "Minor difference";
+  if (pct < 25) return "Moderate difference";
+  return "Major difference";
 }
 
 /* ===============================
@@ -462,7 +385,5 @@ function renderRows(results) {
 document.addEventListener("DOMContentLoaded", () => {
   setupLivingAutocomplete("cityA", "cityAList");
   setupLivingAutocomplete("cityB", "cityBList");
-
-  const btn = document.getElementById("compareBtn");
-  if (btn) btn.addEventListener("click", compareLivingCost);
+  document.getElementById("compareBtn")?.addEventListener("click", compareLivingCost);
 });
