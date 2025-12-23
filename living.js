@@ -286,7 +286,6 @@ function compareLivingCost() {
 
   document.getElementById("cityAName").textContent = cityAInput.value;
   document.getElementById("cityBName").textContent = cityBInput.value;
-  document.getElementById("livingHeader").style.display = "grid";
 
   const cityA = livingCostData[cityAId];
   const cityB = livingCostData[cityBId];
